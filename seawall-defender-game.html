@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seawall Defender: Quick Play Edition</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f8ff;
+        }
+        
+        #game-container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+        .logo-left {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 100px;
+            height: auto;
+        }
+        
+        .logo-right {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 100px;
+            height: auto;
+        }
+        
+        .game-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-top: 110px; /* Make room for logos */
+        }
+        
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #e8f4f8;
+            border-radius: 5px;
+        }
+        
+        .game-area {
+            min-height: 300px;
+            border: 2px solid #4a90e2;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            background-color: #4a90e2;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #357abd;
+        }
+        
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .wave-info {
+            margin: 20px 0;
+            font-size: 18px;
+        }
+        
+        .feedback {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .feedback.good {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .feedback.bad {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .start-screen, .end-screen {
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .breaking-wave {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        
+        .non-breaking-wave {
+            color: #007bff;
+            font-weight: bold;
+        }
+        
+        .developer-info {
+            text-align: center;
+            margin-top: 20px;
+            font-style: italic;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <img src="images/coastal-adaptation-logo.png" alt="Coastal Adaptation Logo" class="logo-left">
+        <img src="images/coastal-hydrology-lab-logo.png" alt="Coastal Hydrology Lab Logo" class="logo-right">
+        
+        <div class="game-header">
+            <h1>Seawall Defender: Quick Play Edition</h1>
+            <p>Protect your seawall from breaking and non-breaking waves!</p>
+        </div>
+        
+        <div class="status-bar">
+            <div>Round: <span id="round">1</span>/5</div>
+            <div>HP: <span id="hp">50</span></div>
+            <div>Score: <span id="score">0</span></div>
+        </div>
+        
+        <div class="game-area" id="game-area">
+            <div class="start-screen" id="start-screen">
+                <h2>Welcome to Seawall Defender!</h2>
+                <p>You have 5 rounds to protect your seawall.</p>
+                <p><span class="breaking-wave">Breaking waves</span> deal heavy damage (10 HP)</p>
+                <p><span class="non-breaking-wave">Non-breaking waves</span> deal light damage (3 HP)</p>
+                <p>Make the right defensive choices to minimize damage!</p>
+                <button onclick="startGame()">Start Game</button>
+            </div>
+            
+            <div id="game-screen" style="display: none;">
+                <div id="wave-info" class="wave-info"></div>
+                <div id="question" style="margin: 20px 0;"></div>
+                <div id="controls" class="controls"></div>
+                <div id="feedback" class="feedback" style="display: none;"></div>
+            </div>
+            
+            <div id="end-screen" style="display: none;">
+                <h2>Game Over!</h2>
+                <p>Final Score: <span id="final-score"></span></p>
+                <div id="summary"></div>
+                <button onclick="location.reload()">Play Again</button>
+            </div>
+        </div>
+        
+        <div class="developer-info">
+            Developed by Soheil Radfar (Postdoctoral Fellow at The University of Alabama)
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        let gameState = {
+            round: 1,
+            hp: 50,
+            score: 0,
+            currentWave: null,
+            phase: 'start',
+            startTime: null,
+            endTime: null
+        };
+
+        // Wave data
+        const waves = [
+            { 
+                type: 'breaking', 
+                height: 4.5, 
+                period: 8, 
+                depth: 3,
+                description: 'Large storm wave approaching shallow water'
+            },
+            { 
+                type: 'non-breaking', 
+                height: 2.0, 
+                period: 12, 
+                depth: 8,
+                description: 'Long-period swell in deep water'
+            },
+            { 
+                type: 'breaking', 
+                height: 3.5, 
+                period: 6, 
+                depth: 2.5,
+                description: 'Steep wave approaching shallow reef'
+            },
+            { 
+                type: 'non-breaking', 
+                height: 1.8, 
+                period: 10, 
+                depth: 6,
+                description: 'Gentle swell in moderate depth'
+            },
+            { 
+                type: 'breaking', 
+                height: 5.0, 
+                period: 7, 
+                depth: 3.5,
+                description: 'Powerful storm wave in critical depth'
+            }
+        ];
+
+        // Educational facts
+        const facts = [
+            "Breaking waves can exert forces 10x greater than non-breaking waves!",
+            "Wave breaking occurs when wave height exceeds 0.78 times water depth.",
+            "Sloped seawalls can reduce breaking wave impact by 30-50%.",
+            "Non-breaking waves create steady pressure while breaking waves create sudden impacts.",
+            "The shape of your seawall affects whether waves break or reflect."
+        ];
+
+        function startGame() {
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'block';
+            
+            gameState.phase = 'wave-alert';
+            gameState.startTime = new Date();
+            showWaveAlert();
+        }
+
+        function showWaveAlert() {
+            const wave = waves[gameState.round - 1];
+            gameState.currentWave = wave;
+            
+            document.getElementById('wave-info').innerHTML = `
+                <h3>Incoming Wave!</h3>
+                <p>${wave.description}</p>
+                <p>Height: ${wave.height}m | Period: ${wave.period}s | Depth: ${wave.depth}m</p>
+            `;
+            
+            document.getElementById('question').innerHTML = 
+                '<h4>Will this wave break when it hits the seawall?</h4>';
+            
+            document.getElementById('controls').innerHTML = `
+                <button onclick="makeWavePrediction(true)">Yes, it will break</button>
+                <button onclick="makeWavePrediction(false)">No, it won't break</button>
+            `;
+            
+            document.getElementById('feedback').style.display = 'none';
+        }
+
+        function makeWavePrediction(prediction) {
+            const correct = (prediction && gameState.currentWave.type === 'breaking') || 
+                          (!prediction && gameState.currentWave.type === 'non-breaking');
+            
+            if (correct) {
+                gameState.hp += 5;
+                gameState.score += 100;
+                showFeedback('good', 'Correct! +5 HP bonus');
+            } else {
+                showFeedback('bad', 'Incorrect prediction');
+            }
+            
+            updateStatus();
+            
+            setTimeout(() => {
+                gameState.phase = 'defense';
+                showDefenseOptions();
+            }, 1500);
+        }
+
+        function showDefenseOptions() {
+            document.getElementById('question').innerHTML = 
+                '<h4>Choose your defense strategy:</h4>';
+            
+            document.getElementById('controls').innerHTML = `
+                <button onclick="chooseDefense('flatten')">Flatten Slope</button>
+                <button onclick="chooseDefense('steepen')">Steepen Slope</button>
+                <button onclick="chooseDefense('repair')">Emergency Repair (+10 HP)</button>
+            `;
+            
+            document.getElementById('feedback').style.display = 'none';
+        }
+
+        function chooseDefense(defense) {
+            let damage = 0;
+            const wave = gameState.currentWave;
+            
+            if (defense === 'repair') {
+                gameState.hp += 10;
+                showFeedback('good', 'Emergency repairs completed! +10 HP');
+            } else {
+                if (wave.type === 'breaking') {
+                    damage = 10;
+                    if (defense === 'flatten') damage = 5;
+                } else {
+                    damage = 3;
+                    if (defense === 'steepen') damage = 1;
+                }
+                
+                gameState.hp -= damage;
+                
+                const effectiveness = defense === 
+                    (wave.type === 'breaking' ? 'flatten' : 'steepen') ? 
+                    'Effective' : 'Less effective';
+                
+                showFeedback(
+                    damage <= 5 ? 'good' : 'bad', 
+                    `${effectiveness} defense! -${damage} HP`
+                );
+            }
+            
+            updateStatus();
+            
+            setTimeout(() => {
+                gameState.phase = 'learn';
+                showLearningPhase();
+            }, 1500);
+        }
+
+        function showLearningPhase() {
+            const fact = facts[gameState.round - 1];
+            
+            document.getElementById('question').innerHTML = '<h4>Did you know?</h4>';
+            document.getElementById('controls').innerHTML = '';
+            document.getElementById('feedback').style.display = 'none';
+            
+            document.getElementById('wave-info').innerHTML = `
+                <div style="font-size: 18px; padding: 20px; background-color: #e8f4f8; border-radius: 5px;">
+                    ${fact}
+                </div>
+            `;
+            
+            setTimeout(() => {
+                if (gameState.round < 5 && gameState.hp > 0) {
+                    gameState.round++;
+                    showWaveAlert();
+                } else {
+                    endGame();
+                }
+            }, 6000);
+        }
+
+        function showFeedback(type, message) {
+            const feedback = document.getElementById('feedback');
+            feedback.className = `feedback ${type}`;
+            feedback.textContent = message;
+            feedback.style.display = 'block';
+        }
+
+        function updateStatus() {
+            document.getElementById('round').textContent = gameState.round;
+            document.getElementById('hp').textContent = gameState.hp;
+            document.getElementById('score').textContent = gameState.score;
+        }
+
+        function endGame() {
+            gameState.endTime = new Date();
+            const timeSpent = Math.round((gameState.endTime - gameState.startTime) / 1000);
+            
+            document.getElementById('game-screen').style.display = 'none';
+            document.getElementById('end-screen').style.display = 'block';
+            
+            const finalScore = gameState.score + (gameState.hp * 10);
+            document.getElementById('final-score').textContent = finalScore;
+            
+            let message = '';
+            if (gameState.hp <= 0) {
+                message = 'Your seawall was destroyed! Remember: Breaking waves are much more destructive than non-breaking waves.';
+            } else if (gameState.hp > 30) {
+                message = 'Excellent work! You successfully protected your seawall by understanding wave behavior.';
+            } else {
+                message = 'Good effort! Your seawall survived but took significant damage.';
+            }
+            
+            document.getElementById('summary').innerHTML = `
+                <p>${message}</p>
+                <p><strong>Time Spent: ${timeSpent} seconds</strong></p>
+                <h4>Key Takeaways:</h4>
+                <ul style="text-align: left;">
+                    <li>Breaking waves create impact forces that are much stronger than non-breaking waves</li>
+                    <li>Wave breaking depends on wave height, water depth, and seawall geometry</li>
+                    <li>Proper seawall design can reduce damage from both types of waves</li>
+                </ul>
+            `;
+        }
+    </script>
+</body>
+</html>
