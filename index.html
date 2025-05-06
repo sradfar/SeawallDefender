@@ -319,10 +319,10 @@
                 }
                 
                 gameState.hp -= damage;
-                
-                const effectiveness = defense === 
-                    (wave.type === 'breaking' ? 'flatten' : 'steepen') ? 
-                    'Effective' : 'Less effective';
+
+                const effectiveness = (wave.type === 'breaking' && defense === 'flatten') || 
+                      (wave.type === 'non-breaking' && defense === 'steepen') ? 
+                      'Effective' : 'Less effective';
                 
                 showFeedback(
                     damage <= 5 ? 'good' : 'bad', 
