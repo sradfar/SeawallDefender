@@ -1,7 +1,5 @@
 # Seawall Defender: Quick Play Edition
 
-![Coastal Adaptation Logo](images/coastal-adaptation-logo.png) ![Coastal Hydrology Lab Logo](images/coastal-hydrology-lab-logo.png)
-
 ## About the Game
 
 Seawall Defender is an educational browser-based game that teaches players about coastal wave dynamics and seawall protection strategies. Players must defend their seawall against different types of waves by predicting wave behavior and selecting appropriate defense mechanisms.
@@ -80,7 +78,6 @@ Seawall Defender teaches important concepts in coastal engineering:
 ## Credits
 
 Developed by Soheil Radfar, Postdoctoral Fellow at The University of Alabama.
-Part of the Coastal Hydrology Lab and Coastal Adaptation research initiatives.
 
 ## License
 
